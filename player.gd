@@ -12,6 +12,11 @@ var facing_direction := 1
 var is_attacking := false
 var hit_targets := []
 
+# СИГНАЛ ПРИ ИЗМНЕНИИ ХП
+signal health_changed(current_hp, max_hp)
+
+var max_health = 100
+var current_health = 100
 
 func _ready() -> void:
 	add_to_group("player")
@@ -23,7 +28,9 @@ func _ready() -> void:
 		attack_area.body_entered.connect(_on_attack_area_body_entered)
 
 	attack_shape.disabled = true
-
+	#HP
+	current_health = max_health
+	health_changed.emit(current_health, max_health)
 
 func _physics_process(delta: float) -> void:
 	if not is_on_floor():
@@ -67,9 +74,24 @@ func start_attack() -> void:
 		play_anim("attack_right")
 	else:
 		play_anim("attack_left")
+
 #получение урона
 func take_damage(amount: int) ->void:
 	print("Player took dmg:", amount)
+	
+	current_health -= amount
+	if current_health < 0:
+		current_health = 0
+		
+	# Сообщаем UI, что ХП изменилось
+	health_changed.emit(current_health, max_health)
+	
+	if current_health == 0:
+		die()
+
+func die():
+	print("Игрок умер")
+	# СМЕРТЬ
 
 func update_animation() -> void:
 	if is_attacking:
@@ -121,3 +143,4 @@ func _on_animation_finished() -> void:
 	if anim.animation == "attack_right" or anim.animation == "attack_left":
 		is_attacking = false
 		attack_shape.disabled = true
+		

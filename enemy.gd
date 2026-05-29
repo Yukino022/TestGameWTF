@@ -11,14 +11,19 @@ const SELF_DAMAGE_ON_LAND = 1
 @onready var aoe_visual: AnimatedSprite2D = $AOEArea/AOEVisual
 @onready var attack_timer: Timer = $AttackTimer
 
-var hp := 20
+signal health_changed(current_hp, max_hp)
+signal aggro_started # Сигнал, что босс сагрился
+
+var max_health = 100
+var current_health = 100
+var is_aggroed = false # Состояние агра
 var is_awake := false
 var is_attacking := false
 var has_left_floor := false
 var already_hit_targets := []
 
-
 func _ready() -> void:
+	current_health = max_health
 	add_to_group("enemy")
 
 	anim.play("idle_unaware")
@@ -52,15 +57,30 @@ func _physics_process(delta: float) -> void:
 
 
 func take_damage(amount: int) -> void:
-	hp -= amount
-	print("Enemy HP: ", hp)
+	print("БОСС ПОЛУЧИЛ УРОН!")
+	
+	current_health -= amount
+	
+	# Если босс еще не был в агре, переводим его в агро и шлем сигнал
+	if not is_aggroed:
+		is_aggroed = true
+		is_awake = true
+		aggro_started.emit()
+		if attack_timer.is_stopped():
+			attack_timer.start() 
+		print("БОСС: Я проснулся и запустил таймер атаки!")
+		
+	if current_health < 0:
+		current_health = 0
+		
+	health_changed.emit(current_health, max_health)
+	
+	if current_health == 0:
+		die()
 
-	if not is_awake:
-		wake_up()
-
-	if hp <= 0:
-		queue_free()
-
+func die():
+	print("Босс повержен")
+	queue_free() # Удаляем босса
 
 func wake_up() -> void:
 	is_awake = true
@@ -91,11 +111,14 @@ func land_attack() -> void:
 	has_left_floor = false
 	velocity.y = 0
 
-	# Самоповреждение босса при ударе об землю
-	hp -= SELF_DAMAGE_ON_LAND
-	print("Enemy hurt himself. HP: ", hp)
+# Самоповреждение босса при ударе об землю
+	current_health -= SELF_DAMAGE_ON_LAND
+	print("Enemy hurt himself. HP: ", current_health)
+	
+	# Сообщаем интерфейсу, что ХП босса изменилось после удара об землю
+	health_changed.emit(current_health, max_health)
 
-	if hp <= 0:
+	if current_health <= 0:
 		queue_free()
 		return
 
@@ -132,10 +155,6 @@ func land_attack() -> void:
 
 	print("Enemy starts waiting for next attack")
 	attack_timer.start()
-
-	if hp <= 0:
-		queue_free()
-		return
 
 	# Визуальная AOE-анимация
 	aoe_visual.visible = true
