@@ -12,7 +12,6 @@
 [ext_resource type="Texture2D" uid="uid://duga64fughc57" path="res://assets/Enemy/attack.png" id="8_5vvyt"]
 [ext_resource type="Texture2D" uid="uid://bv34jdaaisspn" path="res://assets/Enemy/idleafk.png" id="8_20pc6"]
 [ext_resource type="Texture2D" uid="uid://baaljst80asp0" path="res://assets/Enemy/zloy2.png" id="9_wkp8b"]
-[ext_resource type="Script" uid="uid://ceaw13seqj6ba" path="res://ui.gd" id="13_c6i3y"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_cm0pq"]
 size = Vector2(50, 130)
@@ -245,18 +244,6 @@ animations = [{
 "speed": 3.0
 }]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_c6i3y"]
-bg_color = Color(0.3515629, 0.3515629, 0.35156286, 1)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_c2ibq"]
-bg_color = Color(0.82772475, 0, 0.21021184, 1)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_j4qnp"]
-bg_color = Color(0.23031491, 0.23031494, 0.23031485, 1)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fpfj3"]
-bg_color = Color(0.734514, 0.09810879, 0.20213193, 1)
-
 [node name="Main" type="Node2D" unique_id=152594440]
 position = Vector2(-18, 47)
 
@@ -281,7 +268,7 @@ drag_bottom_margin = 0.65
 [node name="PlayerSprite" type="AnimatedSprite2D" parent="Player" unique_id=1375785823]
 scale = Vector2(0.3, 0.3)
 sprite_frames = SubResource("SpriteFrames_glv2v")
-animation = &"jumping_right"
+animation = &"walk_right"
 
 [node name="AttackArea" type="Area2D" parent="Player" unique_id=518998220]
 
@@ -330,26 +317,19 @@ animation = &"idle_unaware"
 [node name="AttackTimer" type="Timer" parent="Enemy" unique_id=2044592194]
 
 [node name="UI" type="CanvasLayer" parent="." unique_id=310732109]
-layer = 10
-script = ExtResource("13_c6i3y")
 
 [node name="PlayerHealthBar" type="ProgressBar" parent="UI" unique_id=1799848231]
-offset_left = 30.0
-offset_top = 42.0
-offset_right = 292.0
-offset_bottom = 69.0
-theme_override_styles/background = SubResource("StyleBoxFlat_c6i3y")
-theme_override_styles/fill = SubResource("StyleBoxFlat_c2ibq")
+offset_left = -267.0
+offset_right = -5.0
+offset_bottom = 27.0
 step = 0.1
 show_percentage = false
 
 [node name="BossHealthBar" type="ProgressBar" parent="UI" unique_id=1547378712]
 visible = false
-offset_left = 215.0
-offset_top = 535.0
-offset_right = 975.0
-offset_bottom = 562.0
-theme_override_styles/background = SubResource("StyleBoxFlat_j4qnp")
-theme_override_styles/fill = SubResource("StyleBoxFlat_fpfj3")
+offset_left = -108.0
+offset_top = 524.0
+offset_right = 652.0
+offset_bottom = 551.0
 step = 0.1
 show_percentage = false
