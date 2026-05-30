@@ -22,7 +22,7 @@ var facing_direction := 1
 var is_attacking := false
 var attack_is_air := false
 var is_invincible := false
-
+var is_rolling = false
 var hit_targets := []
 
 signal health_changed(current_hp, max_hp)
@@ -30,6 +30,8 @@ signal health_changed(current_hp, max_hp)
 var max_health := 100
 var current_health := 100
 
+signal player_died
+var is_dead = false
 
 func _ready() -> void:
 	add_to_group("player")
@@ -48,7 +50,19 @@ func _physics_process(delta: float) -> void:
 		velocity.y += GRAVITY * delta
 
 	var direction := Input.get_axis("move_left", "move_right")
+	
+	if Input.is_action_just_pressed("roll") and is_on_floor() and not is_rolling:
+		# Можно кувыркаться, если не атакуем ИЛИ если атаку можно отменить
+		if not is_attacking or can_cancel_attack:
+			if is_attacking:
+				cancel_attack() # Отменяем удар, если кувыркнулись во время него
+			start_roll()
 
+	# Если кувырок начался, мы просто катимся и выходим из физики
+	if is_rolling:
+		move_and_slide()
+		return
+		
 	# Запоминаем направление взгляда
 	if direction > 0:
 		facing_direction = 1
@@ -92,6 +106,11 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 	update_animation()
+	
+	
+func update_sprite_direction() -> void:
+	var should_flip := facing_direction < 0
+	anim.flip_h = should_flip
 
 func update_sprite_direction() -> void:
 	var should_flip := facing_direction < 0
@@ -176,6 +195,11 @@ func cancel_attack() -> void:
 	end_attack()
 
 func take_damage(amount: int) -> void:
+	if is_rolling:
+		print("Уворот! Урон проигнорирован.")
+		return 
+
+	# 2. Если мы просто в ай-фреймах после прошлого удара - игнорируем
 	if is_invincible:
 		return
 
@@ -194,12 +218,47 @@ func take_damage(amount: int) -> void:
 		die()
 		return
 
+	# Таймер неуязвимости ПОСЛЕ получения урона
 	await get_tree().create_timer(INVINCIBILITY_TIME).timeout
 	is_invincible = false
 
+func start_roll():
+	is_rolling = true
+	play_anim("roll")
+	
+	var direction = Input.get_axis("move_left", "move_right")
+	if direction == 0:
+		direction = facing_direction
+		
+	velocity.x = direction * ROLL_SPEED
+	
+	await get_tree().create_timer(ROLL_DURATION).timeout
+	
+	if is_dead: return # Защита: вдруг убили во время кувырка
+	
+	# Заканчиваем кувырок
+	is_rolling = false
+	velocity.x = 0
+	update_animation() # Возвращаем анимацию ходьбы/стояния
+
 func die() -> void:
 	print("Игрок умер")
-	# Тут позже добавим смерть / рестарт / анимацию
+	if is_dead: return
+	
+	is_dead = true
+	player_died.emit() # Отправляем сигнал интерфейсу показать текст
+	
+	# Выключаем физику, чтобы труп не ходил
+	set_physics_process(false) 
+	
+	anim.play("death") 
+	anim.offset = Vector2(0, 0)
+	
+	# Ждем 2 секунды (чтобы игрок посмотрел анимацию и осознал поражение)
+	await get_tree().create_timer(2.0).timeout
+	
+	#  (респаун)
+	get_tree().reload_current_scene()
 
 func update_animation() -> void:
 	if is_attacking:
