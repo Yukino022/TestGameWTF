@@ -1,9 +1,9 @@
 extends CharacterBody2D
-
+#Основные константы 
 const SPEED = 300.0
 const JUMP_VELOCITY = -450.0
 const GRAVITY = 1200.0
-
+#Константы для атак
 const ATTACK_ACTIVE_TIME = 0.12
 const GROUND_ATTACK_DURATION = 0.35
 const GROUND_ATTACK_RECOVERY_TIME = 0.20
@@ -17,10 +17,12 @@ const ROLL_DURATION = 0.6
 @onready var anim: AnimatedSprite2D = $FullBodySprite
 @onready var attack_area: Area2D = $AttackArea
 @onready var attack_shape: CollisionShape2D = $AttackArea/CollisionShape2D
+#Переменные 
+var facing_direction := 1
+var current_weapon := "unarmed"
 
 var can_cancel_attack := false
 var attack_id := 0
-var facing_direction := 1
 var is_attacking := false
 var attack_is_air := false
 var is_invincible := false
@@ -32,6 +34,7 @@ signal health_changed(current_hp, max_hp)
 var max_health := 100
 var current_health := 100
 
+#MAIN FUNCTIONS 
 signal player_died
 var is_dead = false
 
@@ -101,8 +104,16 @@ func _physics_process(delta: float) -> void:
 				velocity.y = JUMP_VELOCITY
 		else:
 			velocity.y = JUMP_VELOCITY
+# Смена оружия
+	if Input.is_action_just_pressed("weapon_unarmed"):
+		equip_weapon("unarmed")
 
-	# Атака
+	if Input.is_action_just_pressed("weapon_katana"):
+		equip_weapon("katana")
+
+	if Input.is_action_just_pressed("weapon_sword"):
+		equip_weapon("sword")
+# Атака
 	if Input.is_action_just_pressed("attack"):
 		try_start_attack()
 
@@ -117,13 +128,21 @@ func update_sprite_direction() -> void:
 func update_sprite_direction() -> void:
 	var should_flip := facing_direction < 0
 	anim.flip_h = should_flip
+#Ralated to attack functions
+func equip_weapon(weapon_name: String) -> void:
+	if is_attacking:
+		return
 
+	if current_weapon == weapon_name:
+		return
+
+	current_weapon = weapon_name
+	update_animation()
 func try_start_attack() -> void:
 	if is_attacking:
 		return
 
 	start_attack()
-
 func start_attack() -> void:
 	if is_attacking:
 		return
@@ -177,15 +196,6 @@ func start_attack() -> void:
 		return
 
 	end_attack()
-
-func end_attack() -> void:
-	is_attacking = false
-	attack_is_air = false
-	can_cancel_attack = false
-	attack_shape.disabled = true
-
-	update_animation()
-
 func cancel_attack() -> void:
 	if not is_attacking:
 		return
@@ -195,7 +205,33 @@ func cancel_attack() -> void:
 
 	attack_id += 1
 	end_attack()
+func _on_attack_area_body_entered(body: Node) -> void:
+	if not is_attacking:
+		return
 
+	# Не бьём самого себя
+	if body == self:
+		return
+
+	# Бьём только врагов
+	if not body.is_in_group("enemy"):
+		return
+
+	# Не бьём одного и того же врага дважды за одну атаку
+	if body in hit_targets:
+		return
+
+	if body.has_method("take_damage"):
+		hit_targets.append(body)
+		body.take_damage(1)
+func end_attack() -> void:
+	is_attacking = false
+	attack_is_air = false
+	can_cancel_attack = false
+	attack_shape.disabled = true
+
+	update_animation()
+#CHARACTER RELATED (DMG TAKEN ETC.)
 func take_damage(amount: int) -> void:
 	if is_rolling:
 		print("Уворот! Урон проигнорирован.")
@@ -270,32 +306,41 @@ func update_animation() -> void:
 		play_anim("jump")
 		return
 
-	if abs(velocity.x) > 10:
-		play_anim("run")
+	var direction := Input.get_axis("move_left", "move_right")
+
+	if direction != 0:
+		play_movement_anim("run")
 		return
 
-	play_anim("idle")
-
+	play_movement_anim("idle")
 func play_anim(animation_name: String) -> void:
 	if anim.animation != animation_name:
 		anim.play(animation_name)
+func play_movement_anim(base_name: String) -> void:
+	var weapon_anim := "%s_%s" % [base_name, current_weapon]
 
-func _on_attack_area_body_entered(body: Node) -> void:
-	if not is_attacking:
+	if anim.sprite_frames != null and anim.sprite_frames.has_animation(weapon_anim):
+		play_anim(weapon_anim)
 		return
 
-	# Не бьём самого себя
-	if body == self:
+	if base_name == "idle" and current_weapon == "katana":
+		if anim.sprite_frames != null and anim.sprite_frames.has_animation("idle_sword"):
+			play_anim("idle_sword")
+			return
+
+	if base_name == "run" and current_weapon == "sword":
+		if anim.sprite_frames != null and anim.sprite_frames.has_animation("run_unarmed"):
+			play_anim("run_unarmed")
+			return
+
+	var unarmed_fallback := "%s_unarmed" % base_name
+
+	if anim.sprite_frames != null and anim.sprite_frames.has_animation(unarmed_fallback):
+		play_anim(unarmed_fallback)
 		return
 
-	# Бьём только врагов
-	if not body.is_in_group("enemy"):
+	if anim.sprite_frames != null and anim.sprite_frames.has_animation(base_name):
+		play_anim(base_name)
 		return
 
-	# Не бьём одного и того же врага дважды за одну атаку
-	if body in hit_targets:
-		return
-
-	if body.has_method("take_damage"):
-		hit_targets.append(body)
-		body.take_damage(1)
+	play_anim("idle_unarmed")
