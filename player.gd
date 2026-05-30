@@ -124,10 +124,6 @@ func _physics_process(delta: float) -> void:
 func update_sprite_direction() -> void:
 	var should_flip := facing_direction < 0
 	anim.flip_h = should_flip
-
-func update_sprite_direction() -> void:
-	var should_flip := facing_direction < 0
-	anim.flip_h = should_flip
 #Ralated to attack functions
 func equip_weapon(weapon_name: String) -> void:
 	if is_attacking:
