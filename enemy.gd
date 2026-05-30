@@ -2,8 +2,8 @@ extends CharacterBody2D
 
 const GRAVITY = 1200.0
 const JUMP_FORCE = -550.0
-const AOE_DAMAGE = 1
-const SELF_DAMAGE_ON_LAND = 1
+const AOE_DAMAGE = 20
+const SELF_DAMAGE_ON_LAND = 5
 
 @onready var anim: AnimatedSprite2D = $EnemySprite
 @onready var aoe_area: Area2D = $AOEArea
