@@ -4,15 +4,21 @@ const SPEED = 300.0
 const JUMP_VELOCITY = -450.0
 const GRAVITY = 1200.0
 
+const ATTACK_ACTIVE_TIME = 0.12
 const GROUND_ATTACK_DURATION = 0.35
+const GROUND_ATTACK_RECOVERY_TIME = 0.20
 const AIR_ATTACK_DURATION = 0.28
+const AIR_ATTACK_RECOVERY_TIME = 0.12
 const INVINCIBILITY_TIME = 0.7
+const ATTACK_MOVE_MULTIPLIER = 0.45
 
 @onready var anim: AnimatedSprite2D = $FullBodySprite
 @onready var upper_body_anim: AnimatedSprite2D = $UpperBodySprite
 @onready var attack_area: Area2D = $AttackArea
 @onready var attack_shape: CollisionShape2D = $AttackArea/CollisionShape2D
 
+var can_cancel_attack := false
+var attack_id := 0
 var facing_direction := 1
 var is_attacking := false
 var attack_is_air := false
@@ -38,7 +44,6 @@ func _ready() -> void:
 	current_health = max_health
 	health_changed.emit(current_health, max_health)
 
-
 func _physics_process(delta: float) -> void:
 	# Гравитация
 	if not is_on_floor():
@@ -61,8 +66,13 @@ func _physics_process(delta: float) -> void:
 			if direction != 0:
 				velocity.x = direction * SPEED
 		else:
-			# На земле во время атаки персонаж тормозит
-			velocity.x = move_toward(velocity.x, 0, SPEED)
+			if can_cancel_attack:
+				if direction !=0:
+					velocity.x = direction * SPEED * ATTACK_MOVE_MULTIPLIER
+				else:
+					velocity.x = move_toward(velocity.x, 0, SPEED)
+			else:
+				velocity.x = move_toward(velocity.x, 0, SPEED)
 	else:
 		if direction != 0:
 			velocity.x = direction * SPEED
@@ -70,8 +80,13 @@ func _physics_process(delta: float) -> void:
 			velocity.x = move_toward(velocity.x, 0, SPEED)
 
 	# Прыжок
-	if Input.is_action_just_pressed("jump") and is_on_floor() and not is_attacking:
-		velocity.y = JUMP_VELOCITY
+	if Input.is_action_just_pressed("jump") and is_on_floor():
+		if is_attacking:
+			if can_cancel_attack:
+				cancel_attack()
+				velocity.y = JUMP_VELOCITY
+		else:
+			velocity.y = JUMP_VELOCITY
 
 	# Атака
 	if Input.is_action_just_pressed("attack"):
@@ -80,12 +95,10 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	update_animation()
 
-
 func update_sprite_direction() -> void:
 	var should_flip := facing_direction < 0
 	anim.flip_h = should_flip
 	upper_body_anim.flip_h = should_flip
-
 
 func try_start_attack() -> void:
 	if is_attacking:
@@ -93,12 +106,15 @@ func try_start_attack() -> void:
 
 	start_attack()
 
-
 func start_attack() -> void:
 	if is_attacking:
 		return
 
+	attack_id += 1
+	var current_attack_id := attack_id
+
 	is_attacking = true
+	can_cancel_attack = false
 	attack_is_air = not is_on_floor()
 	hit_targets.clear()
 
@@ -123,21 +139,48 @@ func start_attack() -> void:
 	# Ждём 1 физический кадр, чтобы Godot обновил пересечения
 	await get_tree().physics_frame
 
-	# Если враг уже был внутри хитбокса, проверяем вручную
 	for body in attack_area.get_overlapping_bodies():
 		_on_attack_area_body_entered(body)
 
-	var duration := AIR_ATTACK_DURATION if attack_is_air else GROUND_ATTACK_DURATION
+	# Active frames: здесь удар реально наносит урон
+	await get_tree().create_timer(ATTACK_ACTIVE_TIME).timeout
 
-	await get_tree().create_timer(duration).timeout
+	if current_attack_id != attack_id:
+		return
 
+	# После active frames хитбокс выключаем
+	attack_shape.disabled = true
+
+	# Теперь атаку можно отменить
+	can_cancel_attack = true
+
+	var recovery_time := AIR_ATTACK_RECOVERY_TIME if attack_is_air else GROUND_ATTACK_RECOVERY_TIME
+
+	await get_tree().create_timer(recovery_time).timeout
+
+	if current_attack_id != attack_id:
+		return
+
+	end_attack()
+
+func end_attack() -> void:
 	is_attacking = false
 	attack_is_air = false
+	can_cancel_attack = false
 	attack_shape.disabled = true
 	upper_body_anim.visible = false
 
 	update_animation()
 
+func cancel_attack() -> void:
+	if not is_attacking:
+		return
+
+	if not can_cancel_attack:
+		return
+
+	attack_id += 1
+	end_attack()
 
 func take_damage(amount: int) -> void:
 	if is_invincible:
@@ -161,11 +204,9 @@ func take_damage(amount: int) -> void:
 	await get_tree().create_timer(INVINCIBILITY_TIME).timeout
 	is_invincible = false
 
-
 func die() -> void:
 	print("Игрок умер")
 	# Тут позже добавим смерть / рестарт / анимацию
-
 
 func update_animation() -> void:
 	if is_attacking:
@@ -181,11 +222,9 @@ func update_animation() -> void:
 
 	play_anim("idle")
 
-
 func play_anim(animation_name: String) -> void:
 	if anim.animation != animation_name:
 		anim.play(animation_name)
-
 
 func _on_attack_area_body_entered(body: Node) -> void:
 	if not is_attacking:
