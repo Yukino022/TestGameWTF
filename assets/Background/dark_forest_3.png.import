@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dupmiryoh6xk0"
-path="res://.godot/imported/runleftt.png-27f1ccee43362fa16940b1409de2241d.ctex"
+uid="uid://dlclv60gpnp21"
+path="res://.godot/imported/dark_forest_3.png-bda5b09c8a7aa6a829ebacf8b3612698.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/player/runleftt.png"
-dest_files=["res://.godot/imported/runleftt.png-27f1ccee43362fa16940b1409de2241d.ctex"]
+source_file="res://assets/Background/dark_forest_3.png"
+dest_files=["res://.godot/imported/dark_forest_3.png-bda5b09c8a7aa6a829ebacf8b3612698.ctex"]
 
 [params]
 

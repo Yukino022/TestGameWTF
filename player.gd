@@ -9,10 +9,8 @@ const GROUND_ATTACK_DURATION = 0.35
 const GROUND_ATTACK_RECOVERY_TIME = 0.20
 const AIR_ATTACK_DURATION = 0.28
 const AIR_ATTACK_RECOVERY_TIME = 0.12
-const INVINCIBILITY_TIME = 0.3
+const INVINCIBILITY_TIME = 0.7
 const ATTACK_MOVE_MULTIPLIER = 0.45
-const ROLL_SPEED = 350.0
-const ROLL_DURATION = 0.6
 
 @onready var anim: AnimatedSprite2D = $FullBodySprite
 @onready var attack_area: Area2D = $AttackArea
@@ -114,6 +112,10 @@ func update_sprite_direction() -> void:
 	var should_flip := facing_direction < 0
 	anim.flip_h = should_flip
 
+func update_sprite_direction() -> void:
+	var should_flip := facing_direction < 0
+	anim.flip_h = should_flip
+
 func try_start_attack() -> void:
 	if is_attacking:
 		return
@@ -147,10 +149,6 @@ func start_attack() -> void:
 	else:
 		play_anim("attack")
 
-		if facing_direction > 0:
-			play_anim("attack_right")
-		else:
-			play_anim("attack_left")
 	# Ждём 1 физический кадр, чтобы Godot обновил пересечения
 	await get_tree().physics_frame
 
@@ -206,6 +204,7 @@ func take_damage(amount: int) -> void:
 		return
 
 	is_invincible = true
+
 	print("Player took dmg:", amount)
 
 	current_health -= amount
