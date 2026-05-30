@@ -3,77 +3,116 @@ extends CharacterBody2D
 const SPEED = 300.0
 const JUMP_VELOCITY = -450.0
 const GRAVITY = 1200.0
+
+const ATTACK_ACTIVE_TIME = 0.12
 const GROUND_ATTACK_DURATION = 0.35
+const GROUND_ATTACK_RECOVERY_TIME = 0.20
 const AIR_ATTACK_DURATION = 0.28
-const AIR_COMBO_RESET_TIME = 0.5
-const AIR_COMBO_MAX=3
+const AIR_ATTACK_RECOVERY_TIME = 0.12
+const INVINCIBILITY_TIME = 0.3
+const ATTACK_MOVE_MULTIPLIER = 0.45
+const ROLL_SPEED = 350.0
+const ROLL_DURATION = 0.6
 
-
-@onready var anim: AnimatedSprite2D = $PlayerSprite
+@onready var anim: AnimatedSprite2D = $FullBodySprite
 @onready var attack_area: Area2D = $AttackArea
 @onready var attack_shape: CollisionShape2D = $AttackArea/CollisionShape2D
 
+var can_cancel_attack := false
+var attack_id := 0
 var facing_direction := 1
 var is_attacking := false
-#воздушные атаки
-var attack_is_air := false 
-var air_combo_step := 0
-var last_air_attack_time:= 0.0
-
+var attack_is_air := false
+var is_invincible := false
+var is_rolling = false
 var hit_targets := []
 
-# СИГНАЛ ПРИ ИЗМНЕНИИ ХП
 signal health_changed(current_hp, max_hp)
 
-var max_health = 100
-var current_health = 100
+var max_health := 100
+var current_health := 100
+
+signal player_died
+var is_dead = false
 
 func _ready() -> void:
 	add_to_group("player")
+
 	if not attack_area.body_entered.is_connected(_on_attack_area_body_entered):
 		attack_area.body_entered.connect(_on_attack_area_body_entered)
 
 	attack_shape.disabled = true
-
-	#HP
+	
 	current_health = max_health
 	health_changed.emit(current_health, max_health)
 
-
 func _physics_process(delta: float) -> void:
+	# Гравитация
 	if not is_on_floor():
 		velocity.y += GRAVITY * delta
-	else:
-		air_combo_step = 0
 
 	var direction := Input.get_axis("move_left", "move_right")
-
-	if direction >0:
-		facing_direction = 1
-	elif  direction <0:
-		facing_direction = -1
 	
+	if Input.is_action_just_pressed("roll") and is_on_floor() and not is_rolling:
+		# Можно кувыркаться, если не атакуем ИЛИ если атаку можно отменить
+		if not is_attacking or can_cancel_attack:
+			if is_attacking:
+				cancel_attack() # Отменяем удар, если кувыркнулись во время него
+			start_roll()
+
+	# Если кувырок начался, мы просто катимся и выходим из физики
+	if is_rolling:
+		move_and_slide()
+		return
+		
+	# Запоминаем направление взгляда
+	if direction > 0:
+		facing_direction = 1
+	elif direction < 0:
+		facing_direction = -1
+
+	update_sprite_direction()
+
+	# Движение
 	if is_attacking:
 		if attack_is_air:
-		#позволяет двигаться в воздухе
-			if direction !=0:
-				velocity.x = direction *SPEED
+			# В воздухе во время атаки можно двигаться
+			if direction != 0:
+				velocity.x = direction * SPEED
 		else:
-			#afk на земле во время атаки (в будущем меняем)
-			velocity.x = move_toward(velocity.x, 0, SPEED)
+			if can_cancel_attack:
+				if direction !=0:
+					velocity.x = direction * SPEED * ATTACK_MOVE_MULTIPLIER
+				else:
+					velocity.x = move_toward(velocity.x, 0, SPEED)
+			else:
+				velocity.x = move_toward(velocity.x, 0, SPEED)
 	else:
 		if direction != 0:
 			velocity.x = direction * SPEED
 		else:
 			velocity.x = move_toward(velocity.x, 0, SPEED)
-	#Jump
-	if Input.is_action_just_pressed("jump") and is_on_floor() and not is_attacking:
-		velocity.y = JUMP_VELOCITY
+
+	# Прыжок
+	if Input.is_action_just_pressed("jump") and is_on_floor():
+		if is_attacking:
+			if can_cancel_attack:
+				cancel_attack()
+				velocity.y = JUMP_VELOCITY
+		else:
+			velocity.y = JUMP_VELOCITY
+
+	# Атака
 	if Input.is_action_just_pressed("attack"):
 		try_start_attack()
 
 	move_and_slide()
 	update_animation()
+	
+	
+func update_sprite_direction() -> void:
+	var should_flip := facing_direction < 0
+	anim.flip_h = should_flip
 
 func try_start_attack() -> void:
 	if is_attacking:
@@ -84,108 +123,162 @@ func try_start_attack() -> void:
 func start_attack() -> void:
 	if is_attacking:
 		return
+
+	attack_id += 1
+	var current_attack_id := attack_id
+
 	is_attacking = true
+	can_cancel_attack = false
 	attack_is_air = not is_on_floor()
 	hit_targets.clear()
-	
-	# AttackArea всегда стоит в центре Player
+
+	# AttackArea всегда остаётся в центре Player
 	attack_area.position = Vector2.ZERO
-	# Двигаем только саму форму удара вправо/влево
+
+	# Двигаем только форму удара вправо/влево
 	attack_shape.position.x = 70 * facing_direction
 	attack_shape.position.y = 0
 	attack_shape.disabled = false
+
+	# Выбор анимации атаки
 	if attack_is_air:
-		update_air_combo()
-		play_air_attack_animation()
+		play_anim("jump")
+		play_anim("air_attack")
 	else:
+		play_anim("attack")
+
 		if facing_direction > 0:
 			play_anim("attack_right")
 		else:
 			play_anim("attack_left")
-	if facing_direction > 0:
-		play_anim("attack_right")
-	else:
-		play_anim("attack_left")
 	# Ждём 1 физический кадр, чтобы Godot обновил пересечения
 	await get_tree().physics_frame
-		# Если враг уже был внутри хитбокса, проверяем вручную
+
 	for body in attack_area.get_overlapping_bodies():
 		_on_attack_area_body_entered(body)
 
-	# Разная длительность для земли и воздуха
-	var duration := AIR_ATTACK_DURATION if attack_is_air else GROUND_ATTACK_DURATION
+	# Active frames: здесь удар реально наносит урон
+	await get_tree().create_timer(ATTACK_ACTIVE_TIME).timeout
 
-	await get_tree().create_timer(duration).timeout
-	
+	if current_attack_id != attack_id:
+		return
+
+	# После active frames хитбокс выключаем
+	attack_shape.disabled = true
+
+	# Теперь атаку можно отменить
+	can_cancel_attack = true
+
+	var recovery_time := AIR_ATTACK_RECOVERY_TIME if attack_is_air else GROUND_ATTACK_RECOVERY_TIME
+
+	await get_tree().create_timer(recovery_time).timeout
+
+	if current_attack_id != attack_id:
+		return
+
+	end_attack()
+
+func end_attack() -> void:
 	is_attacking = false
 	attack_is_air = false
+	can_cancel_attack = false
 	attack_shape.disabled = true
-	
+
 	update_animation()
-func update_air_combo() -> void:
-	var current_time := Time.get_ticks_msec() /1000
-	if current_time - last_air_attack_time > AIR_COMBO_RESET_TIME:
-		air_combo_step = 0
-	air_combo_step += 1
-	if air_combo_step > AIR_COMBO_MAX:
-		air_combo_step = 1
-	last_air_attack_time = current_time
-	
-#получение урона
-func take_damage(amount: int) ->void:
+
+func cancel_attack() -> void:
+	if not is_attacking:
+		return
+
+	if not can_cancel_attack:
+		return
+
+	attack_id += 1
+	end_attack()
+
+func take_damage(amount: int) -> void:
+	if is_rolling:
+		print("Уворот! Урон проигнорирован.")
+		return 
+
+	# 2. Если мы просто в ай-фреймах после прошлого удара - игнорируем
+	if is_invincible:
+		return
+
+	is_invincible = true
 	print("Player took dmg:", amount)
-	
+
 	current_health -= amount
+
 	if current_health < 0:
 		current_health = 0
-		
-	# Сообщаем UI, что ХП изменилось
+
 	health_changed.emit(current_health, max_health)
-	
+
 	if current_health == 0:
 		die()
+		return
 
-func die():
+	# Таймер неуязвимости ПОСЛЕ получения урона
+	await get_tree().create_timer(INVINCIBILITY_TIME).timeout
+	is_invincible = false
+
+func start_roll():
+	is_rolling = true
+	play_anim("roll")
+	
+	var direction = Input.get_axis("move_left", "move_right")
+	if direction == 0:
+		direction = facing_direction
+		
+	velocity.x = direction * ROLL_SPEED
+	
+	await get_tree().create_timer(ROLL_DURATION).timeout
+	
+	if is_dead: return # Защита: вдруг убили во время кувырка
+	
+	# Заканчиваем кувырок
+	is_rolling = false
+	velocity.x = 0
+	update_animation() # Возвращаем анимацию ходьбы/стояния
+
+func die() -> void:
 	print("Игрок умер")
-	# СМЕРТЬ
-
+	if is_dead: return
+	
+	is_dead = true
+	player_died.emit() # Отправляем сигнал интерфейсу показать текст
+	
+	# Выключаем физику, чтобы труп не ходил
+	set_physics_process(false) 
+	
+	anim.play("death") 
+	anim.offset = Vector2(0, 0)
+	
+	# Ждем 2 секунды (чтобы игрок посмотрел анимацию и осознал поражение)
+	await get_tree().create_timer(2.0).timeout
+	
+	#  (респаун)
+	get_tree().reload_current_scene()
 
 func update_animation() -> void:
 	if is_attacking:
 		return
 
 	if not is_on_floor():
-		if facing_direction > 0:
-			play_anim("jump_right")
-		else:
-			play_anim("jump_left")
+		play_anim("jump")
 		return
 
 	if abs(velocity.x) > 10:
-		if velocity.x > 0:
-			play_anim("walk_right")
-		else:
-			play_anim("walk_left")
+		play_anim("run")
 		return
 
 	play_anim("idle")
-func play_air_attack_animation() -> void:
-	var direction_name := "right" if facing_direction > 0 else "left"
 
-	var combo_animation := "air_attack_%d_%s" % [air_combo_step, direction_name]
-	var fallback_animation := "air_attack_%s" % direction_name
-	var ground_fallback := "attack_%s" % direction_name
-
-	if anim.sprite_frames != null and anim.sprite_frames.has_animation(combo_animation):
-		play_anim(combo_animation)
-	elif anim.sprite_frames != null and anim.sprite_frames.has_animation(fallback_animation):
-		play_anim(fallback_animation)
-	else:
-		play_anim(ground_fallback)
 func play_anim(animation_name: String) -> void:
 	if anim.animation != animation_name:
 		anim.play(animation_name)
-#позволяет атаковать врага и не получать урон от самого себя, сюда же можно добавить переменную с уроном в последнюю строчку
+
 func _on_attack_area_body_entered(body: Node) -> void:
 	if not is_attacking:
 		return
@@ -205,10 +298,3 @@ func _on_attack_area_body_entered(body: Node) -> void:
 	if body.has_method("take_damage"):
 		hit_targets.append(body)
 		body.take_damage(1)
-		
-
-func _on_animation_finished() -> void:
-	if anim.animation == "attack_right" or anim.animation == "attack_left":
-		is_attacking = false
-		attack_shape.disabled = true
-		
