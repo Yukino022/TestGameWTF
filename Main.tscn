@@ -15,6 +15,7 @@
 [ext_resource type="Texture2D" uid="uid://21ubwd6tfe0q" path="res://assets/Enemy/zloy1.png" id="8_03owx"]
 [ext_resource type="Texture2D" uid="uid://duga64fughc57" path="res://assets/Enemy/attack.png" id="8_5vvyt"]
 [ext_resource type="Texture2D" uid="uid://bv34jdaaisspn" path="res://assets/Enemy/idleafk.png" id="8_20pc6"]
+[ext_resource type="Texture2D" uid="uid://b5r7wdrux2lms" path="res://assets/player/Player Roll 48x48.png" id="8_bg4s2"]
 [ext_resource type="Texture2D" uid="uid://baaljst80asp0" path="res://assets/Enemy/zloy2.png" id="9_wkp8b"]
 [ext_resource type="Script" uid="uid://ceaw13seqj6ba" path="res://ui.gd" id="13_c6i3y"]
 [ext_resource type="Texture2D" uid="uid://dla3sxon0nruw" path="res://assets/Background/dark_forest_1.png" id="14_kjvhd"]
@@ -241,6 +242,34 @@ region = Rect2(192, 0, 48, 48)
 [sub_resource type="AtlasTexture" id="AtlasTexture_38apo"]
 atlas = ExtResource("5_j4qnp")
 region = Rect2(240, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_5cpvc"]
+atlas = ExtResource("8_bg4s2")
+region = Rect2(0, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_cxcit"]
+atlas = ExtResource("8_bg4s2")
+region = Rect2(48, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_b1va2"]
+atlas = ExtResource("8_bg4s2")
+region = Rect2(96, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_8gn08"]
+atlas = ExtResource("8_bg4s2")
+region = Rect2(144, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_llcqu"]
+atlas = ExtResource("8_bg4s2")
+region = Rect2(192, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_al55t"]
+atlas = ExtResource("8_bg4s2")
+region = Rect2(240, 0, 48, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hln0y"]
+atlas = ExtResource("8_bg4s2")
+region = Rect2(288, 0, 48, 48)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_fykug"]
 atlas = ExtResource("6_2gh4u")
@@ -533,6 +562,32 @@ animations = [{
 "speed": 8.0
 }, {
 "frames": [{
+"duration": 0.7,
+"texture": SubResource("AtlasTexture_5cpvc")
+}, {
+"duration": 0.7,
+"texture": SubResource("AtlasTexture_cxcit")
+}, {
+"duration": 0.7,
+"texture": SubResource("AtlasTexture_b1va2")
+}, {
+"duration": 0.7,
+"texture": SubResource("AtlasTexture_8gn08")
+}, {
+"duration": 0.7,
+"texture": SubResource("AtlasTexture_llcqu")
+}, {
+"duration": 0.7,
+"texture": SubResource("AtlasTexture_al55t")
+}, {
+"duration": 0.7,
+"texture": SubResource("AtlasTexture_hln0y")
+}],
+"loop": true,
+"name": &"roll",
+"speed": 6.0
+}, {
+"frames": [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_fykug")
 }, {
@@ -738,8 +793,7 @@ drag_bottom_margin = 0.65
 [node name="FullBodySprite" type="AnimatedSprite2D" parent="Player" unique_id=1375785823]
 scale = Vector2(3, 3)
 sprite_frames = SubResource("SpriteFrames_glv2v")
-animation = &"idle_katana"
-frame_progress = 0.52486163
+animation = &"roll"
 
 [node name="AttackArea" type="Area2D" parent="Player" unique_id=518998220]
 
