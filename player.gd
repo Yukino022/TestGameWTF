@@ -13,7 +13,6 @@ const INVINCIBILITY_TIME = 0.7
 const ATTACK_MOVE_MULTIPLIER = 0.45
 
 @onready var anim: AnimatedSprite2D = $FullBodySprite
-@onready var upper_body_anim: AnimatedSprite2D = $UpperBodySprite
 @onready var attack_area: Area2D = $AttackArea
 @onready var attack_shape: CollisionShape2D = $AttackArea/CollisionShape2D
 
@@ -39,7 +38,6 @@ func _ready() -> void:
 		attack_area.body_entered.connect(_on_attack_area_body_entered)
 
 	attack_shape.disabled = true
-	upper_body_anim.visible = false
 	
 	current_health = max_health
 	health_changed.emit(current_health, max_health)
@@ -98,7 +96,6 @@ func _physics_process(delta: float) -> void:
 func update_sprite_direction() -> void:
 	var should_flip := facing_direction < 0
 	anim.flip_h = should_flip
-	upper_body_anim.flip_h = should_flip
 
 func try_start_attack() -> void:
 	if is_attacking:
@@ -129,11 +126,8 @@ func start_attack() -> void:
 	# Выбор анимации атаки
 	if attack_is_air:
 		play_anim("jump")
-		upper_body_anim.visible = true
-		upper_body_anim.frame = 0
-		upper_body_anim.play("air_attack")
+		play_anim("air_attack")
 	else:
-		upper_body_anim.visible = false
 		play_anim("attack")
 
 	# Ждём 1 физический кадр, чтобы Godot обновил пересечения
@@ -168,7 +162,6 @@ func end_attack() -> void:
 	attack_is_air = false
 	can_cancel_attack = false
 	attack_shape.disabled = true
-	upper_body_anim.visible = false
 
 	update_animation()
 
