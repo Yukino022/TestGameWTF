@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://rpdfeanprdwg"
-path="res://.godot/imported/attack2.png-c6b5f506703cbe68deafd0227a42871a.ctex"
+uid="uid://bihsmmrai7l"
+path="res://.godot/imported/dark_forest_4.png-0cad243f0828d71fa76a698d51c85959.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/player/attack2.png"
-dest_files=["res://.godot/imported/attack2.png-c6b5f506703cbe68deafd0227a42871a.ctex"]
+source_file="res://assets/Background/dark_forest_4.png"
+dest_files=["res://.godot/imported/dark_forest_4.png-0cad243f0828d71fa76a698d51c85959.ctex"]
 
 [params]
 
