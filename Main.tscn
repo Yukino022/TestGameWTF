@@ -1065,7 +1065,7 @@ animations = [{
 size = Vector2(90, 100)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_fos0i"]
-size = Vector2(2763, 40)
+size = Vector2(2763, 52)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wkp8b"]
 
@@ -1148,7 +1148,7 @@ bg_color = Color(0.734514, 0.09810879, 0.20213193, 1)
 position = Vector2(-18, 47)
 
 [node name="Player" type="CharacterBody2D" parent="." unique_id=162706547]
-position = Vector2(300, 250)
+position = Vector2(300, 350)
 script = ExtResource("1_uu6xs")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Player" unique_id=576881251]
@@ -1156,6 +1156,7 @@ position = Vector2(0, 4.5)
 shape = SubResource("RectangleShape2D_cm0pq")
 
 [node name="Camera2D" type="Camera2D" parent="Player" unique_id=1667869917]
+position = Vector2(0, -120)
 process_callback = 0
 limit_enabled = false
 position_smoothing_enabled = true
@@ -1183,11 +1184,11 @@ disabled = true
 position = Vector2(119, 57)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Floor" unique_id=694963260]
-position = Vector2(774, 1688)
+position = Vector2(155, 526)
 shape = SubResource("RectangleShape2D_fos0i")
 
 [node name="Enemy" type="CharacterBody2D" parent="." unique_id=1945953091]
-position = Vector2(-27, -2)
+position = Vector2(-20, 180)
 script = ExtResource("7_lgr22")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Enemy" unique_id=369213181]
@@ -1233,11 +1234,10 @@ step = 0.1
 show_percentage = false
 
 [node name="BossHealthBar" type="ProgressBar" parent="UI" unique_id=1547378712]
-visible = false
-offset_left = 215.0
-offset_top = 671.0
-offset_right = 975.0
-offset_bottom = 698.0
+offset_left = 500.0
+offset_top = 42.0
+offset_right = 1260.0
+offset_bottom = 69.0
 theme_override_styles/background = SubResource("StyleBoxFlat_j4qnp")
 theme_override_styles/fill = SubResource("StyleBoxFlat_fpfj3")
 step = 0.1
@@ -1259,6 +1259,7 @@ repeat_times = 3
 
 [node name="BG_01" type="Sprite2D" parent="Parallax/BackgroundFar" unique_id=165589698]
 z_index = -50
+position = Vector2(0, -250)
 scale = Vector2(2.5, 2.5)
 texture = ExtResource("14_kjvhd")
 centered = false
@@ -1271,6 +1272,7 @@ repeat_times = 3
 
 [node name="BG_02" type="Sprite2D" parent="Parallax/BackgroundALittleCloser" unique_id=1089751490]
 z_index = -40
+position = Vector2(0, -250)
 scale = Vector2(2.5, 2.5)
 texture = ExtResource("15_5tuhn")
 centered = false
@@ -1283,6 +1285,7 @@ repeat_times = 3
 
 [node name="BG_03" type="Sprite2D" parent="Parallax/BackgroundCloser" unique_id=831091523]
 z_index = -30
+position = Vector2(0, -250)
 scale = Vector2(2.5, 2.5)
 texture = ExtResource("16_2gh4u")
 centered = false
@@ -1295,6 +1298,7 @@ repeat_times = 3
 
 [node name="BG_04" type="Sprite2D" parent="Parallax/BackgroundEvenCloser" unique_id=1055788304]
 z_index = -20
+position = Vector2(0, -250)
 scale = Vector2(2.5, 2.5)
 texture = ExtResource("17_devvj")
 centered = false
@@ -1307,6 +1311,7 @@ repeat_times = 3
 
 [node name="BG_05" type="Sprite2D" parent="Parallax/BackgroundTheClosest" unique_id=1830252658]
 z_index = -10
+position = Vector2(0, -250)
 scale = Vector2(2.5, 2.5)
 texture = ExtResource("18_3b0ty")
 centered = false
