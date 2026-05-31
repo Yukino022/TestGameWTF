@@ -14,8 +14,8 @@ const SELF_DAMAGE_ON_LAND = 5
 signal health_changed(current_hp, max_hp)
 signal aggro_started # Сигнал, что босс сагрился
 
-var max_health = 100
-var current_health = 100
+var max_health = 500
+var current_health = 500
 var is_aggroed = false # Состояние агра
 var is_awake := false
 var is_attacking := false
@@ -40,7 +40,6 @@ func _ready() -> void:
 	if not aoe_area.body_entered.is_connected(_on_aoe_body_entered):
 		aoe_area.body_entered.connect(_on_aoe_body_entered)
 
-
 func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y += GRAVITY * delta
@@ -54,7 +53,6 @@ func _physics_process(delta: float) -> void:
 	# AOE только после того, как он сначала оторвался, а потом приземлился
 	if is_attacking and has_left_floor and is_on_floor():
 		land_attack()
-
 
 func take_damage(amount: int) -> void:
 	print("БОСС ПОЛУЧИЛ УРОН!")
@@ -87,11 +85,9 @@ func wake_up() -> void:
 	anim.play("idle_combat")
 	attack_timer.start()
 
-
 func _on_attack_timer_timeout() -> void:
 	if is_awake and not is_attacking:
 		start_jump_attack()
-
 
 func start_jump_attack() -> void:
 	print("Enemy jumps")
@@ -102,7 +98,6 @@ func start_jump_attack() -> void:
 
 	anim.play("jump_attack")
 	velocity.y = JUMP_FORCE
-
 
 func land_attack() -> void:
 	print("Enemy landed, AOE attack")
@@ -183,7 +178,6 @@ func land_attack() -> void:
 
 	anim.play("idle_combat")
 	attack_timer.start()
-
 
 func _on_aoe_body_entered(body: Node) -> void:
 	if body in already_hit_targets:
